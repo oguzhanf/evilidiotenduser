@@ -1,0 +1,58 @@
+# Build output
+[Bb]in/
+[Oo]bj/
+[Ll]og/
+[Ll]ogs/
+
+# Visual Studio / Rider
+.vs/
+.idea/
+*.user
+*.suo
+*.userosscache
+*.sln.docstates
+*.rsuser
+
+# .NET
+project.lock.json
+project.fragment.lock.json
+artifacts/
+*.nupkg
+*.snupkg
+
+# MSIX / packaging
+AppPackages/
+BundleArtifacts/
+*.appx
+*.appxbundle
+*.msix
+*.msixbundle
+*.cer
+*.pfx
+GeneratedArtifacts/
+_pkginfo.txt
+
+# Playwright
+.playwright/
+playwright/.cache/
+
+# Test results
+[Tt]est[Rr]esult*/
+*.trx
+*.coverage
+*.coveragexml
+
+# Runtime artefacts produced by the simulator (test drops / exported logs)
+evilenduser-log-*.json
+evilenduser-log-*.csv
+EvilEndUser_Staging/
+
+# Local secrets / credentials (NEVER commit)
+*.local.json
+appsettings.*.local.json
+secrets.json
+.env
+
+# OS
+Thumbs.db
+.DS_Store

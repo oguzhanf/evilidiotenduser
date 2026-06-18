@@ -1,0 +1,44 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="EvilEndUser.App.Pages.AboutPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24">
+        <StackPanel MaxWidth="900" Spacing="16">
+            <TextBlock Text="About &amp; Safety" Style="{StaticResource TitleTextBlockStyle}" />
+
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Evil End User" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock TextWrapping="Wrap" Text="A WinUI 3 simulator that drives real desktop apps (Edge/Chrome, Outlook, Teams, PowerShell) the way a careless end user would, to validate Microsoft Defender for Endpoint and Defender for Office 365 alerting across the MITRE ATT&amp;CK kill chain." />
+                    <TextBlock TextWrapping="Wrap" Foreground="{ThemeResource TextFillColorSecondaryBrush}" Text="MITRE ATT&amp;CK Enterprise v19.1 · Built for M365 E5 / Windows 365 test tenants." />
+                </StackPanel>
+            </Border>
+
+            <InfoBar IsOpen="True" IsClosable="False" Severity="Warning" Title="Use responsibly">
+                <InfoBar.Content>
+                    <StackPanel Spacing="8" Margin="0,8,0,8">
+                        <TextBlock TextWrapping="Wrap" Text="• Only run on endpoints and tenants you are explicitly authorised to test." />
+                        <TextBlock TextWrapping="Wrap" Text="• Safe Mode (default) restricts ALL activity to vetted, harmless test artefacts: the EICAR test file, the GTUBE spam string, and Microsoft/AMTSO-hosted SmartScreen demo URLs. No real malware is ever used." />
+                        <TextBlock TextWrapping="Wrap" Text="• The risk ceiling caps how far scenarios go; Critical actions (e.g. really disabling Defender) require both Safe Mode OFF and an explicit Critical ceiling." />
+                        <TextBlock TextWrapping="Wrap" Text="• Registry persistence writes a clearly-labelled, reversible HKCU value." />
+                    </StackPanel>
+                </InfoBar.Content>
+            </InfoBar>
+
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="8">
+                    <TextBlock Text="Vetted test payloads" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock TextWrapping="Wrap" FontFamily="Consolas" FontSize="12" Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                               Text="EICAR (eicar.org) · GTUBE (spamassassin) · demo.smartscreen.msft.net · smartscreentestratings2.net · amtso.org feature checks" />
+                    <HyperlinkButton Content="MITRE ATT&amp;CK Enterprise" NavigateUri="https://attack.mitre.org/" />
+                    <HyperlinkButton Content="Defender for Endpoint demonstrations" NavigateUri="https://learn.microsoft.com/defender-endpoint/defender-endpoint-demonstrations" />
+                </StackPanel>
+            </Border>
+        </StackPanel>
+    </ScrollViewer>
+</Page>

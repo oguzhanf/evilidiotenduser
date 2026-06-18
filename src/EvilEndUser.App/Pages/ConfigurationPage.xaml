@@ -1,0 +1,58 @@
+<?xml version="1.0" encoding="utf-8" ?>
+<Page
+    x:Class="EvilEndUser.App.Pages.ConfigurationPage"
+    xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+    xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+    xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+    mc:Ignorable="d">
+
+    <ScrollViewer Padding="24">
+        <StackPanel MaxWidth="900" Spacing="16">
+            <TextBlock Text="Configuration" Style="{StaticResource TitleTextBlockStyle}" />
+
+            <!-- Identity -->
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Identity &amp; targets" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBox x:Name="SelfMailboxBox" Header="Signed-in mailbox (your identity)" PlaceholderText="user@contoso.com" TextChanged="SelfMailbox_Changed" />
+                    <TextBox x:Name="TenantBox" Header="Entra tenant ID (optional, for device login)" PlaceholderText="contoso.onmicrosoft.com or GUID" TextChanged="Tenant_Changed" />
+                    <TextBox x:Name="RecipientsBox" Header="External recipients (comma-separated)" PlaceholderText="my.personal@example.com, partner@example.net" TextChanged="Recipients_Changed" />
+                    <TextBox x:Name="WorkingDirBox" Header="Working directory (drops &amp; exports)" TextChanged="WorkingDir_Changed" />
+                </StackPanel>
+            </Border>
+
+            <!-- Apps -->
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Desktop apps to drive" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <ComboBox x:Name="BrowserCombo" Header="Browser" HorizontalAlignment="Stretch" SelectionChanged="Browser_Changed" />
+                    <ToggleSwitch x:Name="HeadlessToggle" Header="Run browser headless" OnContent="On" OffContent="Off" Toggled="Headless_Toggled" />
+                    <ToggleSwitch x:Name="EmailToggle" Header="Outlook / Exchange (Microsoft Graph)" OnContent="Enabled" OffContent="Disabled" Toggled="Email_Toggled" />
+                    <ToggleSwitch x:Name="TeamsToggle" Header="Microsoft Teams (Microsoft Graph)" OnContent="Enabled" OffContent="Disabled" Toggled="Teams_Toggled" />
+                    <ToggleSwitch x:Name="ProcessToggle" Header="Process / shell execution" OnContent="Enabled" OffContent="Disabled" Toggled="Process_Toggled" />
+                    <ToggleSwitch x:Name="FileToggle" Header="Filesystem drops" OnContent="Enabled" OffContent="Disabled" Toggled="File_Toggled" />
+                    <Button Click="SignInGraph_Click" Content="Sign in to Microsoft Graph (device login)" />
+                    <InfoBar x:Name="GraphBar" IsOpen="False" IsClosable="True" />
+                </StackPanel>
+            </Border>
+
+            <!-- LLM -->
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="LLM brain" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="Drives non-deterministic behaviour. Use Azure OpenAI deployed in your demo tenant. Leave the API key blank to use device/Azure credential sign-in." />
+                    <ComboBox x:Name="LlmProviderCombo" Header="Provider" HorizontalAlignment="Stretch" SelectionChanged="LlmProvider_Changed" />
+                    <TextBox x:Name="LlmEndpointBox" Header="Endpoint" PlaceholderText="https://my-aoai.openai.azure.com/" TextChanged="LlmEndpoint_Changed" />
+                    <TextBox x:Name="LlmDeploymentBox" Header="Deployment / model name" PlaceholderText="gpt-4o" TextChanged="LlmDeployment_Changed" />
+                    <PasswordBox x:Name="LlmKeyBox" Header="API key (optional)" PasswordChanged="LlmKey_Changed" />
+                    <Slider x:Name="TempSlider" Header="Base temperature" Minimum="0" Maximum="2" StepFrequency="0.1" ValueChanged="Temp_Changed" />
+                </StackPanel>
+            </Border>
+
+        </StackPanel>
+    </ScrollViewer>
+</Page>

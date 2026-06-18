@@ -1,0 +1,10 @@
+{
+  "profiles": {
+    "EvilEndUser.App (Package)": {
+      "commandName": "MsixPackage"
+    },
+    "EvilEndUser.App (Unpackaged)": {
+      "commandName": "Project"
+    }
+  }
+}
