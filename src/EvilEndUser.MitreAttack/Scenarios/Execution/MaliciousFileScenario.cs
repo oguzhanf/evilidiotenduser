@@ -48,6 +48,14 @@ public sealed class MaliciousFileScenario : ScenarioBase
 
         ctx.Log($"User saved an email attachment '{fileName}' to Downloads.");
 
+        // Open the real Outlook desktop client first (process telemetry for MDE).
+        await Do(ctx, Action(
+            SimActionType.LaunchDesktopApp,
+            "outlook",
+            RiskLevel.Safe,
+            TechniqueCatalog.SpearphishingAttachment,
+            "Opening Outlook to read the invoice email."), ct);
+
         var write = await Do(ctx, Action(
             SimActionType.WriteFile,
             path,

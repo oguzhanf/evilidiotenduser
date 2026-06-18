@@ -136,6 +136,9 @@ public sealed class ScenarioContext : IScenarioContext
             case SimActionType.UploadToCloud:
                 return await Require<IBrowserDriver>(action).NavigateAsync(action, ct);
 
+            case SimActionType.LaunchDesktopApp:
+                return await Require<IDesktopDriver>(action).LaunchAppAsync(action, ct);
+
             case SimActionType.RunProcess:
                 return await Require<IProcessDriver>(action).RunAsync(action, ct);
             case SimActionType.ModifyRegistry:

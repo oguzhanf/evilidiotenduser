@@ -90,3 +90,17 @@ public interface IFileSystemDriver : IAutomationDriver
     /// <summary>Opens / launches a file using its default handler.</summary>
     Task<ActionResult> OpenFileAsync(SimAction action, CancellationToken ct = default);
 }
+
+/// <summary>
+/// Launches and focuses the <i>real</i> desktop applications a user interacts with (Outlook, Teams,
+/// Edge, File Explorer, …). Launching the genuine processes generates authentic process-creation
+/// telemetry for Defender for Endpoint, exactly as if the user opened the apps themselves.
+/// </summary>
+public interface IDesktopDriver : IAutomationDriver
+{
+    /// <summary>
+    /// Launches a desktop app identified by a friendly name in <see cref="SimAction.Target"/>
+    /// (e.g. "outlook", "teams", "edge", "explorer", "notepad") and brings its window to the front.
+    /// </summary>
+    Task<ActionResult> LaunchAppAsync(SimAction action, CancellationToken ct = default);
+}

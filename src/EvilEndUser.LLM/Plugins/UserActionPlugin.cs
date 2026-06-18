@@ -132,6 +132,16 @@ public sealed class UserActionPlugin
         return "You waited for a moment.";
     }
 
+    [KernelFunction, Description("Open one of your desktop apps (outlook, teams, edge, chrome, explorer, notepad, word, excel).")]
+    public async Task<string> OpenDesktopApp(
+        [Description("Friendly app name: outlook, teams, edge, chrome, explorer, notepad, word, excel.")] string app,
+        [Description("A short in-character reason.")] string reason = "")
+    {
+        var action = Build(SimActionType.LaunchDesktopApp, app, RiskLevel.Safe,
+            TechniqueCatalog.UserExecutionFile, reason);
+        return Describe(await _ctx.ExecuteAsync(action, _ct));
+    }
+
     private SimAction Build(
         SimActionType type, string target, RiskLevel risk, MitreTechnique technique,
         string? reason, IReadOnlyDictionary<string, string>? parameters = null)

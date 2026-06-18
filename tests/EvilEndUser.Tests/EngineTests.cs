@@ -23,7 +23,7 @@ public class EngineTests
     {
         var browser = new FakeBrowserDriver();
         var bus = new SimulationEventBus();
-        var engine = new SimulationEngine(FastConfig(), new IAutomationDriver[] { browser }, bus);
+        var engine = new SimulationEngine(FastConfig(), new IAutomationDriver[] { browser, new FakeDesktopDriver() }, bus);
 
         var result = await engine.RunScenarioAsync(new DriveByCompromiseScenario());
 
@@ -39,7 +39,7 @@ public class EngineTests
         var browser = new FakeBrowserDriver();
         var bus = new SimulationEventBus();
         // Spearphishing scenario is High risk; ceiling Low must skip it.
-        var engine = new SimulationEngine(FastConfig(RiskLevel.Low), new IAutomationDriver[] { browser }, bus);
+        var engine = new SimulationEngine(FastConfig(RiskLevel.Low), new IAutomationDriver[] { browser, new FakeDesktopDriver() }, bus);
 
         var result = await engine.RunScenarioAsync(new SpearphishingLinkScenario());
 
@@ -54,7 +54,7 @@ public class EngineTests
         var bus = new SimulationEventBus();
         var config = FastConfig();
         config.DryRun = true;
-        var engine = new SimulationEngine(config, new IAutomationDriver[] { browser }, bus);
+        var engine = new SimulationEngine(config, new IAutomationDriver[] { browser, new FakeDesktopDriver() }, bus);
 
         var result = await engine.RunScenarioAsync(new DriveByCompromiseScenario());
 
@@ -68,11 +68,26 @@ public class EngineTests
     {
         var browser = new FakeBrowserDriver();
         var bus = new SimulationEventBus();
-        var engine = new SimulationEngine(FastConfig(), new IAutomationDriver[] { browser }, bus);
+        var engine = new SimulationEngine(FastConfig(), new IAutomationDriver[] { browser, new FakeDesktopDriver() }, bus);
 
         await engine.RunScenarioAsync(new DriveByCompromiseScenario());
 
         Assert.NotEmpty(bus.History);
         Assert.Contains(bus.History, e => e.Severity == EventSeverity.Telemetry);
     }
+
+    [Fact]
+    public async Task DriveBy_launches_the_real_browser_app()
+    {
+        var browser = new FakeBrowserDriver();
+        var desktop = new FakeDesktopDriver();
+        var bus = new SimulationEventBus();
+        var engine = new SimulationEngine(FastConfig(), new IAutomationDriver[] { browser, desktop }, bus);
+
+        var result = await engine.RunScenarioAsync(new DriveByCompromiseScenario());
+
+        Assert.Equal(ScenarioStatus.Completed, result.Status);
+        Assert.Contains(desktop.Launches, a => a.Target is "edge" or "chrome");
+    }
 }
+

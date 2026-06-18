@@ -30,6 +30,7 @@ public sealed class DriverFactory
         var drivers = new List<IAutomationDriver>
         {
             new BrowserDriver(config, _loggerFactory?.CreateLogger<BrowserDriver>()),
+            new DesktopAppDriver(_loggerFactory?.CreateLogger<DesktopAppDriver>()),
         };
 
         if (config.EnableFileSystem)

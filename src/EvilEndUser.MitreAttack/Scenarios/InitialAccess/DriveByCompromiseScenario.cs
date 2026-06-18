@@ -39,6 +39,14 @@ public sealed class DriveByCompromiseScenario : ScenarioBase
     {
         ctx.Log("User clicked an enticing ad and started browsing sketchy pages.");
 
+        // The user opens their everyday browser first (real process telemetry for MDE).
+        await Do(ctx, Action(
+            SimActionType.LaunchDesktopApp,
+            ctx.Config.Browser == Core.Models.BrowserKind.Chrome ? "chrome" : "edge",
+            RiskLevel.Safe,
+            TechniqueCatalog.DriveByCompromise,
+            "Opening my browser to check out that ad."), ct);
+
         var targets = new[]
         {
             TestPayloads.SmartScreenDemos.First(d => d.Name.Contains("exploit", StringComparison.OrdinalIgnoreCase)).Url,

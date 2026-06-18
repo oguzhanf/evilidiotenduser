@@ -44,6 +44,14 @@ public sealed class InternalSpearphishingScenario : ScenarioBase
     {
         ctx.Log("Compromised account is messaging colleagues to spread the phish.");
 
+        // Open the real Teams desktop client first.
+        await Do(ctx, Action(
+            SimActionType.LaunchDesktopApp,
+            "teams",
+            RiskLevel.Safe,
+            TechniqueCatalog.InternalSpearphishing,
+            "Opening Teams to message a colleague."), ct);
+
         var phishUrl = TestPayloads.SmartScreenDemos
             .First(d => d.Name.Contains("phishing", StringComparison.OrdinalIgnoreCase)).Url;
 

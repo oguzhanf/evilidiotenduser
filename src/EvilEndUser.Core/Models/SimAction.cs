@@ -80,6 +80,9 @@ public enum SimActionType
     /// <summary>Upload a file to an external web service (exfiltration emulation).</summary>
     UploadToCloud,
 
+    /// <summary>Launch a real desktop application (Outlook, Teams, Edge, Explorer) by name.</summary>
+    LaunchDesktopApp,
+
     /// <summary>Wait / idle for a period (think time).</summary>
     Idle,
 }

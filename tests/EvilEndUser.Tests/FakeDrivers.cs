@@ -65,3 +65,20 @@ public sealed class FakeProcessDriver : IProcessDriver
 
     public ValueTask DisposeAsync() => ValueTask.CompletedTask;
 }
+
+/// <summary>A desktop-app driver test double (records launches, never starts a real process).</summary>
+public sealed class FakeDesktopDriver : IDesktopDriver
+{
+    public List<SimAction> Launches { get; } = new();
+
+    public string Name => "FakeDesktop";
+    public Task<bool> IsAvailableAsync(CancellationToken ct = default) => Task.FromResult(true);
+
+    public Task<ActionResult> LaunchAppAsync(SimAction action, CancellationToken ct = default)
+    {
+        Launches.Add(action);
+        return Task.FromResult(ActionResult.Ok(action, "launched"));
+    }
+
+    public ValueTask DisposeAsync() => ValueTask.CompletedTask;
+}
