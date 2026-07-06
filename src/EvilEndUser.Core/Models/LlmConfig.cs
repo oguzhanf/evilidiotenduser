@@ -42,6 +42,19 @@ public sealed class LlmConfig
     /// <summary>Entra tenant ID used for interactive token auth when no API key is supplied.</summary>
     public string? TenantId { get; set; }
 
+    /// <summary>
+    /// When true the brain authenticates to Azure OpenAI / Azure AI Foundry using the machine's
+    /// signed-in Entra identity (WAM broker SSO) rather than an API key. This is the zero-config
+    /// path on Entra-joined machines.
+    /// </summary>
+    public bool UseEntraIdentity { get; set; } = true;
+
+    /// <summary>
+    /// True once the endpoint/deployment were auto-discovered from Azure AI Foundry, so the UI can
+    /// show the values as detected rather than manually entered.
+    /// </summary>
+    public bool AutoDiscovered { get; set; }
+
     /// <summary>Sampling temperature applied on top of the persona's erraticness.</summary>
     public double BaseTemperature { get; set; } = 0.7;
 

@@ -17,11 +17,67 @@ public sealed partial class ConfigurationPage : Page
     {
         _sim = EvilEndUser_App.App.Services.GetRequiredService<SimulationService>();
         InitializeComponent();
-        LoadFromConfig();
+        PopulateCombos();
+        LoadValues();
         _initializing = false;
+
+        _sim.AutoConfigured += OnAutoConfigured;
+        Unloaded += (_, _) => _sim.AutoConfigured -= OnAutoConfigured;
+
+        UpdateAutoDetectBar();
+        TriggerAutoDetect(force: false);
     }
 
-    private void LoadFromConfig()
+    private void OnAutoConfigured()
+    {
+        // Reflect newly discovered identity / Foundry values without duplicating combo items.
+        _initializing = true;
+        LoadValues();
+        _initializing = false;
+        UpdateAutoDetectBar();
+    }
+
+    private void UpdateAutoDetectBar()
+    {
+        AutoDetectBar.Message = _sim.AutoConfigStatus;
+        AutoDetectBar.Severity = _sim.IsAutoConfigured ? InfoBarSeverity.Success : InfoBarSeverity.Informational;
+    }
+
+    private void TriggerAutoDetect(bool force)
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(EvilEndUser_App.App.MainWindow);
+            _ = _sim.EnsureAutoConfiguredAsync(hwnd, force);
+        }
+        catch
+        {
+            // status/log surface any failure
+        }
+    }
+
+    private async void Redetect_Click(object sender, RoutedEventArgs e)
+    {
+        AutoDetectBar.Severity = InfoBarSeverity.Informational;
+        AutoDetectBar.Message = "Detecting…";
+        var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(EvilEndUser_App.App.MainWindow);
+        await _sim.EnsureAutoConfiguredAsync(hwnd, force: true);
+        UpdateAutoDetectBar();
+    }
+
+    private void PopulateCombos()
+    {
+        foreach (var b in Enum.GetValues<BrowserKind>())
+        {
+            BrowserCombo.Items.Add(b.ToString());
+        }
+        foreach (var p in Enum.GetValues<LlmProvider>())
+        {
+            LlmProviderCombo.Items.Add(p.ToString());
+        }
+    }
+
+    private void LoadValues()
     {
         var c = _sim.Config;
 
@@ -30,24 +86,14 @@ public sealed partial class ConfigurationPage : Page
         RecipientsBox.Text = string.Join(", ", c.ExternalRecipients);
         WorkingDirBox.Text = c.WorkingDirectory;
 
-        foreach (var b in Enum.GetValues<BrowserKind>())
-        {
-            BrowserCombo.Items.Add(b.ToString());
-        }
         BrowserCombo.SelectedItem = c.Browser.ToString();
-
         HeadlessToggle.IsOn = c.HeadlessBrowser;
         EmailToggle.IsOn = c.EnableEmail;
         TeamsToggle.IsOn = c.EnableTeams;
         ProcessToggle.IsOn = c.EnableProcessExecution;
         FileToggle.IsOn = c.EnableFileSystem;
 
-        foreach (var p in Enum.GetValues<LlmProvider>())
-        {
-            LlmProviderCombo.Items.Add(p.ToString());
-        }
         LlmProviderCombo.SelectedItem = c.Llm.Provider.ToString();
-
         LlmEndpointBox.Text = c.Llm.Endpoint ?? string.Empty;
         LlmDeploymentBox.Text = c.Llm.DeploymentName;
         TempSlider.Value = c.Llm.BaseTemperature;

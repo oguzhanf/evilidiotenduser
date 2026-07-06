@@ -1,6 +1,8 @@
 using System.Collections.ObjectModel;
+using Azure.Core;
 using CommunityToolkit.Mvvm.ComponentModel;
 using EvilEndUser.Automation;
+using EvilEndUser.Automation.Identity;
 using EvilEndUser.Core.Abstractions;
 using EvilEndUser.Core.Engine;
 using EvilEndUser.Core.Events;
@@ -21,6 +23,10 @@ public sealed partial class SimulationService : ObservableObject
     private readonly DispatcherQueue _dispatcher;
     private readonly DriverFactory _driverFactory;
     private CancellationTokenSource? _cts;
+
+    private TokenCredential? _brokerCredential;
+    private readonly SemaphoreSlim _autoConfigLock = new(1, 1);
+    private bool _autoConfigAttempted;
 
     /// <summary>The live, editable configuration.</summary>
     public SimulationConfig Config { get; } = new();
@@ -49,6 +55,15 @@ public sealed partial class SimulationService : ObservableObject
     [ObservableProperty]
     private int _riskyActionCount;
 
+    [ObservableProperty]
+    private string _autoConfigStatus = "Not detected yet";
+
+    [ObservableProperty]
+    private bool _isAutoConfigured;
+
+    /// <summary>Raised (on the UI thread) after an auto-configuration pass finishes.</summary>
+    public event Action? AutoConfigured;
+
     /// <summary>Creates the service and begins listening for telemetry.</summary>
     public SimulationService()
     {
@@ -59,6 +74,60 @@ public sealed partial class SimulationService : ObservableObject
         // Default the self-mailbox to the signed-in Windows account where possible.
         Config.SelfMailbox = TryGetUserUpn();
     }
+
+    /// <summary>
+    /// Zero-config auto-detection: uses the WAM broker to sign in silently as the machine's Entra
+    /// account, then discovers the identity/tenant and an Azure AI Foundry chat deployment. Runs at
+    /// most once per session (unless <paramref name="force"/>). Non-blocking-safe and best-effort.
+    /// </summary>
+    public async Task EnsureAutoConfiguredAsync(nint windowHandle, bool force = false)
+    {
+        await _autoConfigLock.WaitAsync();
+        try
+        {
+            if (_autoConfigAttempted && !force) return;
+            _autoConfigAttempted = true;
+
+            SetStatus("Detecting Entra identity & Foundry…");
+            var auto = new EntraAutoConfig();
+            var result = await Task.Run(() => auto.AutoConfigureAsync(Config, windowHandle)).ConfigureAwait(false);
+
+            _brokerCredential = result.Credential;
+
+            var parts = new List<string>();
+            if (result.Identity?.Upn is { } upn) parts.Add($"signed in as {upn}");
+            if (result.Foundry is { } f) parts.Add($"Foundry: {f.Deployment} ({f.ModelName}) @ {f.ResourceName}");
+            else parts.Add("no Foundry deployment found");
+
+            IsAutoConfigured = result.Foundry is not null;
+            SetStatus(string.Join(" · ", parts));
+
+            EventBus.Publish(new SimulationEvent
+            {
+                Source = "AutoConfig",
+                Severity = result.Foundry is not null ? EventSeverity.Info : EventSeverity.Warning,
+                Message = "Auto-detection complete: " + string.Join("; ", parts),
+            });
+
+            _dispatcher.TryEnqueue(() => AutoConfigured?.Invoke());
+        }
+        catch (Exception ex)
+        {
+            SetStatus($"Auto-detect failed: {ex.Message}");
+            EventBus.Publish(new SimulationEvent
+            {
+                Source = "AutoConfig",
+                Severity = EventSeverity.Warning,
+                Message = $"Auto-detection failed (this is expected on non-Entra-joined machines): {ex.Message}",
+            });
+        }
+        finally
+        {
+            _autoConfigLock.Release();
+        }
+    }
+
+    private void SetStatus(string text) => _dispatcher.TryEnqueue(() => AutoConfigStatus = text);
 
     private void OnEventPublished(SimulationEvent evt)
     {
@@ -108,9 +177,9 @@ public sealed partial class SimulationService : ObservableObject
 
         try
         {
-            var drivers = _driverFactory.Build(Config);
+            var drivers = _driverFactory.Build(Config, _brokerCredential);
             IAgentBrain? brain = Config.Llm.Provider != LlmProvider.None && Config.Llm.IsConfigured
-                ? new SemanticKernelAgentBrain(Config)
+                ? new SemanticKernelAgentBrain(Config, logger: null, credential: _brokerCredential)
                 : null;
 
             var engine = new SimulationEngine(Config, drivers, EventBus, brain);

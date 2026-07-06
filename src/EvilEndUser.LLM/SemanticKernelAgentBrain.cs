@@ -1,4 +1,5 @@
 using Azure.AI.OpenAI;
+using Azure.Core;
 using Azure.Identity;
 using EvilEndUser.Core.Abstractions;
 using EvilEndUser.Core.Models;
@@ -22,13 +23,24 @@ public sealed class SemanticKernelAgentBrain : IAgentBrain
     private readonly LlmConfig _llm;
     private readonly SimulationConfig _config;
     private readonly ILogger<SemanticKernelAgentBrain>? _logger;
+    private readonly TokenCredential? _credential;
 
     /// <summary>Creates the brain from configuration.</summary>
-    public SemanticKernelAgentBrain(SimulationConfig config, ILogger<SemanticKernelAgentBrain>? logger = null)
+    /// <param name="config">The active simulation configuration.</param>
+    /// <param name="logger">Optional logger.</param>
+    /// <param name="credential">
+    /// Optional Entra credential (e.g. the WAM broker credential) used for keyless Azure OpenAI /
+    /// Azure AI Foundry auth. When supplied it is preferred over <c>DefaultAzureCredential</c>.
+    /// </param>
+    public SemanticKernelAgentBrain(
+        SimulationConfig config,
+        ILogger<SemanticKernelAgentBrain>? logger = null,
+        TokenCredential? credential = null)
     {
         _config = config;
         _llm = config.Llm;
         _logger = logger;
+        _credential = credential;
     }
 
     /// <inheritdoc />
@@ -120,9 +132,10 @@ public sealed class SemanticKernelAgentBrain : IAgentBrain
                 }
                 else
                 {
-                    // Token-based auth (DefaultAzureCredential / device login to the demo tenant).
-                    var client = new AzureOpenAIClient(new Uri(_llm.Endpoint!),
-                        new DefaultAzureCredential());
+                    // Keyless: prefer the supplied Entra/broker credential (Foundry SSO), else fall
+                    // back to the ambient DefaultAzureCredential chain.
+                    TokenCredential credential = _credential ?? new DefaultAzureCredential();
+                    var client = new AzureOpenAIClient(new Uri(_llm.Endpoint!), credential);
                     builder.AddAzureOpenAIChatCompletion(_llm.DeploymentName, client);
                 }
                 break;

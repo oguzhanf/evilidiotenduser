@@ -11,6 +11,24 @@
         <StackPanel MaxWidth="900" Spacing="16">
             <TextBlock Text="Configuration" Style="{StaticResource TitleTextBlockStyle}" />
 
+            <!-- Zero-config auto-detection (Entra + Foundry) -->
+            <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
+                <StackPanel Spacing="12">
+                    <TextBlock Text="Automatic setup (Entra-joined + Foundry)" Style="{StaticResource SubtitleTextBlockStyle}" />
+                    <TextBlock
+                        Foreground="{ThemeResource TextFillColorSecondaryBrush}"
+                        TextWrapping="Wrap"
+                        Text="On Entra-joined machines this signs in silently as your Windows account (WAM broker — no codes, no passwords) and auto-discovers your identity, tenant, and an Azure AI Foundry chat deployment. No copy-paste required." />
+                    <InfoBar x:Name="AutoDetectBar" IsOpen="True" IsClosable="False" Severity="Informational" Title="Auto-detection" />
+                    <Button x:Name="RedetectButton" Click="Redetect_Click">
+                        <StackPanel Orientation="Horizontal" Spacing="6">
+                            <FontIcon Glyph="&#xE72C;" FontSize="14" />
+                            <TextBlock Text="Re-detect now" />
+                        </StackPanel>
+                    </Button>
+                </StackPanel>
+            </Border>
+
             <!-- Identity -->
             <Border Padding="20" Background="{ThemeResource CardBackgroundFillColorDefaultBrush}" BorderBrush="{ThemeResource CardStrokeColorDefaultBrush}" BorderThickness="1" CornerRadius="8">
                 <StackPanel Spacing="12">

@@ -1,3 +1,4 @@
+using Azure.Core;
 using EvilEndUser.Automation.Drivers;
 using EvilEndUser.Automation.Graph;
 using EvilEndUser.Core.Abstractions;
@@ -24,8 +25,12 @@ public sealed class DriverFactory
     /// </summary>
     public GraphClientProvider? GraphProvider { get; private set; }
 
-    /// <summary>Builds the driver collection honouring the enable-flags in <paramref name="config"/>.</summary>
-    public IReadOnlyList<IAutomationDriver> Build(SimulationConfig config)
+    /// <summary>
+    /// Builds the driver collection honouring the enable-flags in <paramref name="config"/>.
+    /// When <paramref name="brokerCredential"/> is supplied (the signed-in Entra account), Graph uses
+    /// it for silent SSO instead of the device-code flow.
+    /// </summary>
+    public IReadOnlyList<IAutomationDriver> Build(SimulationConfig config, TokenCredential? brokerCredential = null)
     {
         var drivers = new List<IAutomationDriver>
         {
@@ -47,8 +52,9 @@ public sealed class DriverFactory
         {
             GraphProvider = new GraphClientProvider(
                 config.Llm.TenantId,
-                useDeviceCode: true,
-                _loggerFactory?.CreateLogger<GraphClientProvider>());
+                useDeviceCode: brokerCredential is null,
+                _loggerFactory?.CreateLogger<GraphClientProvider>(),
+                credential: brokerCredential);
 
             if (config.EnableEmail)
             {

@@ -2,6 +2,8 @@ using Microsoft.UI.Windowing;
 using Microsoft.UI.Xaml;
 using Microsoft.UI.Xaml.Controls;
 using EvilEndUser.App.Pages;
+using EvilEndUser.App.Services;
+using Microsoft.Extensions.DependencyInjection;
 
 namespace EvilEndUser_App;
 
@@ -21,6 +23,23 @@ public sealed partial class MainWindow : Window
         AppWindow.SetIcon("Assets/AppIcon.ico");
 
         NavFrame.Navigate(typeof(DashboardPage));
+
+        // Kick off zero-config Entra + Foundry auto-detection using this window as the broker parent.
+        StartAutoConfig();
+    }
+
+    private void StartAutoConfig()
+    {
+        try
+        {
+            var hwnd = WinRT.Interop.WindowNative.GetWindowHandle(this);
+            var sim = EvilEndUser_App.App.Services.GetRequiredService<SimulationService>();
+            _ = sim.EnsureAutoConfiguredAsync(hwnd);
+        }
+        catch
+        {
+            // Best-effort; auto-config failures are surfaced via the service status/log.
+        }
     }
 
     private void TitleBar_PaneToggleRequested(TitleBar sender, object args)

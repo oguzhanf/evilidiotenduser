@@ -32,6 +32,8 @@ user behave **non-deterministically**, choosing varied actions run-to-run like a
   - **Filesystem & registry** — drops the EICAR test file, writes a reversible Run-key for
     persistence telemetry.
 - **MITRE ATT&CK v19.1 scenario harnesses** spanning 12 tactics (see [coverage](#-mitre-attck-coverage)).
+- **Zero-config on Entra-joined machines**: silent WAM-broker sign-in as the Windows account, with
+  automatic discovery of your identity/tenant and an **Azure AI Foundry** chat deployment (keyless).
 - **LLM-driven free-roam** mode for emergent, non-scripted behaviour.
 - **Live activity log** with severity colouring and **JSON/CSV export** for correlating your
   simulator timeline against the alerts that show up in the Defender portal.
@@ -159,28 +161,46 @@ pwsh src/EvilEndUser.Automation/bin/Release/net9.0-windows10.0.19041.0/playwrigh
 
 ## ⚙️ Configuration
 
-Everything is configured from the **Configuration** tab in the app:
+### Zero-config on Entra-joined machines (recommended)
+
+On an **Entra-joined** machine where you have access to **Azure AI Foundry**, the app configures
+itself automatically at startup — **no typing, no device codes, no API keys**:
+
+1. It signs in **silently** as your Windows Entra account using the **WAM broker** (falling back to
+   a native broker prompt only if silent SSO isn't possible).
+2. It auto-fills your **mailbox (UPN)** and **tenant ID** from that identity.
+3. It scans the Azure subscriptions you can access, finds a **Cognitive Services / Azure AI Foundry**
+   account (kind `OpenAI` or `AIServices`), picks the best **chat deployment** (preferring GPT-4o-class
+   models), and wires the LLM brain to it **keyless** (Entra token auth for the data plane too).
+
+Watch the **Activity Log** / the banner on the **Configuration** tab for what was detected, and use
+**Re-detect now** to refresh. Everything below is only needed if auto-detection can't find something.
+
+### Manual configuration
+
+Everything is configurable from the **Configuration** tab:
 
 - **Identity & targets** — your signed-in mailbox, Entra tenant ID, external recipient(s) used for
   self-exfiltration / BEC lures, and the working directory for drops & exports.
 - **Desktop apps to drive** — toggle Browser (Edge/Chrome), Outlook/Graph, Teams/Graph, process
   execution, and filesystem.
-- **Microsoft Graph sign-in** — uses the **device-code flow**; the first email/Teams action prints a
-  code + `aka.ms/devicelogin` URL to the Activity Log.
-- **LLM brain** — provider, endpoint, deployment/model, optional API key (leave blank to use Azure
-  credential / device sign-in), and base temperature.
+- **Microsoft Graph sign-in** — on Entra-joined machines this is silent (broker SSO); otherwise it
+  falls back to the **device-code flow** (code + `aka.ms/devicelogin` shown in the Activity Log).
+- **LLM brain** — provider, endpoint, deployment/model, optional API key (leave blank to use the
+  Entra/broker identity), and base temperature.
 
-### LLM setup (Azure OpenAI)
+### LLM setup (Azure OpenAI / Foundry, only if not auto-detected)
 
 ```bash
-az cognitiveservices account create -n my-aoai -g my-rg --kind OpenAI --sku S0 -l eastus2
+az cognitiveservices account create -n my-aoai -g my-rg --kind AIServices --sku S0 -l eastus2
 az cognitiveservices account deployment create -n my-aoai -g my-rg \
   --deployment-name gpt-4o --model-name gpt-4o --model-version "2024-11-20" \
-  --model-format OpenAI --sku-name Standard --sku-capacity 80
+  --model-format OpenAI --sku-name GlobalStandard --sku-capacity 50
 ```
 
-Then set **Provider = AzureOpenAI**, **Endpoint = https://my-aoai.openai.azure.com/**, and
-**Deployment = gpt-4o** in the Configuration tab.
+Grant your user the **Cognitive Services OpenAI User** role on the resource so keyless Entra auth
+works. Then set **Provider = AzureOpenAI**, the **Endpoint**, and **Deployment** in the Configuration
+tab (or just let auto-detection do it).
 
 ---
 
