@@ -12,7 +12,15 @@ namespace EvilEndUser.Automation.Identity;
 public sealed record EntraIdentity(string? Upn, string? TenantId);
 
 /// <summary>A discovered Azure AI Foundry / Azure OpenAI chat deployment.</summary>
-public sealed record FoundryTarget(string ResourceName, string Endpoint, string Deployment, string ModelName);
+public sealed record FoundryTarget(string ResourceName, string Endpoint, string Deployment, string ModelName)
+{
+    /// <summary>
+    /// The resource's API key, auto-fetched via ARM when the caller has management access. Used as a
+    /// fallback when the signed-in identity lacks the data-plane "Cognitive Services OpenAI User" role
+    /// (keyless Entra auth). Held in memory only — never persisted.
+    /// </summary>
+    public string? ApiKey { get; init; }
+}
 
 /// <summary>The result of a zero-config auto-detection pass.</summary>
 public sealed record AutoConfigResult(TokenCredential Credential, EntraIdentity? Identity, FoundryTarget? Foundry)
@@ -73,8 +81,10 @@ public sealed class EntraAutoConfig
             config.Llm.Provider = LlmProvider.AzureOpenAI;
             config.Llm.Endpoint = foundry.Endpoint;
             config.Llm.DeploymentName = foundry.Deployment;
-            config.Llm.ApiKey = null;              // keyless
-            config.Llm.UseEntraIdentity = true;
+            // Prefer the auto-fetched key (works even without the data-plane RBAC role); otherwise
+            // stay keyless and rely on the signed-in Entra identity's "Cognitive Services OpenAI User" role.
+            config.Llm.ApiKey = foundry.ApiKey;
+            config.Llm.UseEntraIdentity = string.IsNullOrEmpty(foundry.ApiKey);
             config.Llm.AutoDiscovered = true;
         }
 
@@ -123,6 +133,7 @@ public sealed class EntraAutoConfig
 
             FoundryTarget? best = null;
             var bestScore = int.MinValue;
+            string? bestAccountId = null;
 
             foreach (var sub in EnumerateArray(subs, "value"))
             {
@@ -164,15 +175,28 @@ public sealed class EntraAutoConfig
                         {
                             bestScore = score;
                             best = new FoundryTarget(name, endpoint!, depName!, modelName!);
+                            bestAccountId = acctId;
                         }
                     }
                 }
             }
 
+            // Auto-fetch the resource key (works when the caller has management/listKeys access). This
+            // lets the LLM work even when the signed-in identity lacks the data-plane RBAC role — a very
+            // common case where the user is a resource Contributor but not a data-plane OpenAI User.
+            if (best is not null && bestAccountId is not null)
+            {
+                var apiKey = await TryFetchKeyAsync(http, bestAccountId, ct).ConfigureAwait(false);
+                if (!string.IsNullOrEmpty(apiKey))
+                {
+                    best = best with { ApiKey = apiKey };
+                }
+            }
+
             if (best is not null)
             {
-                _logger?.LogInformation("Discovered Foundry deployment {Deployment} ({Model}) at {Endpoint}",
-                    best.Deployment, best.ModelName, best.Endpoint);
+                _logger?.LogInformation("Discovered Foundry deployment {Deployment} ({Model}) at {Endpoint} (key auth: {Key})",
+                    best.Deployment, best.ModelName, best.Endpoint, best.ApiKey is not null);
             }
 
             return best;
@@ -185,6 +209,29 @@ public sealed class EntraAutoConfig
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────────────────
+
+    /// <summary>
+    /// Fetches the resource's primary key via ARM <c>listKeys</c>. Returns null when the caller lacks
+    /// the permission (in which case the app stays keyless and relies on data-plane RBAC).
+    /// </summary>
+    private async Task<string?> TryFetchKeyAsync(HttpClient http, string accountId, CancellationToken ct)
+    {
+        try
+        {
+            var url = $"https://management.azure.com{accountId}/listKeys?api-version=2023-05-01";
+            using var resp = await http.PostAsync(url, content: null, ct).ConfigureAwait(false);
+            if (!resp.IsSuccessStatusCode) return null;
+
+            var stream = await resp.Content.ReadAsStreamAsync(ct).ConfigureAwait(false);
+            using var doc = await JsonDocument.ParseAsync(stream, cancellationToken: ct).ConfigureAwait(false);
+            return GetString(doc.RootElement, "key1") ?? GetString(doc.RootElement, "key2");
+        }
+        catch (Exception ex)
+        {
+            _logger?.LogInformation(ex, "listKeys not permitted; staying keyless");
+            return null;
+        }
+    }
 
     private static int ScoreModel(string modelName)
     {

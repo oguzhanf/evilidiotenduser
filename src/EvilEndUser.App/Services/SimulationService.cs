@@ -96,7 +96,11 @@ public sealed partial class SimulationService : ObservableObject
 
             var parts = new List<string>();
             if (result.Identity?.Upn is { } upn) parts.Add($"signed in as {upn}");
-            if (result.Foundry is { } f) parts.Add($"Foundry: {f.Deployment} ({f.ModelName}) @ {f.ResourceName}");
+            if (result.Foundry is { } f)
+            {
+                var authMode = string.IsNullOrEmpty(f.ApiKey) ? "keyless/Entra" : "key";
+                parts.Add($"Foundry: {f.Deployment} ({f.ModelName}) @ {f.ResourceName} [auth: {authMode}]");
+            }
             else parts.Add("no Foundry deployment found");
 
             IsAutoConfigured = result.Foundry is not null;
