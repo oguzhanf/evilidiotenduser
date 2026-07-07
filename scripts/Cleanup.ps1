@@ -43,7 +43,8 @@ $patterns = @(
     'Refund_Details.txt',
     'eicar*.*',
     'evilenduser-log-*.json',
-    'evilenduser-log-*.csv'
+    'evilenduser-log-*.csv',
+    'evilenduser-autoconfig.log'
 )
 foreach ($pattern in $patterns) {
     Get-ChildItem -Path $WorkingDirectory -Filter $pattern -ErrorAction SilentlyContinue | ForEach-Object {

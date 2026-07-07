@@ -12,6 +12,8 @@ namespace EvilEndUser_App;
 /// </summary>
 public sealed partial class MainWindow : Window
 {
+    private bool _autoConfigKicked;
+
     /// <summary>Initializes the shell window.</summary>
     public MainWindow()
     {
@@ -24,7 +26,16 @@ public sealed partial class MainWindow : Window
 
         NavFrame.Navigate(typeof(DashboardPage));
 
-        // Kick off zero-config Entra + Foundry auto-detection using this window as the broker parent.
+        // Kick off zero-config Entra + Foundry auto-detection once the window is activated (the WAM
+        // broker needs a live, activated parent window — it isn't available yet in the constructor).
+        Activated += OnFirstActivated;
+    }
+
+    private void OnFirstActivated(object sender, WindowActivatedEventArgs args)
+    {
+        if (_autoConfigKicked) return;
+        _autoConfigKicked = true;
+        Activated -= OnFirstActivated;
         StartAutoConfig();
     }
 

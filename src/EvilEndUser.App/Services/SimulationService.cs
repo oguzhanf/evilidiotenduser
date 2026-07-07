@@ -26,7 +26,7 @@ public sealed partial class SimulationService : ObservableObject
 
     private TokenCredential? _brokerCredential;
     private readonly SemaphoreSlim _autoConfigLock = new(1, 1);
-    private bool _autoConfigAttempted;
+    private bool _autoConfigSucceeded;
 
     /// <summary>The live, editable configuration.</summary>
     public SimulationConfig Config { get; } = new();
@@ -85,8 +85,8 @@ public sealed partial class SimulationService : ObservableObject
         await _autoConfigLock.WaitAsync();
         try
         {
-            if (_autoConfigAttempted && !force) return;
-            _autoConfigAttempted = true;
+            // Skip only if a previous attempt already succeeded (a failed attempt may be retried).
+            if (_autoConfigSucceeded && !force) return;
 
             SetStatus("Detecting Entra identity & Foundry…");
             var auto = new EntraAutoConfig();
@@ -100,7 +100,9 @@ public sealed partial class SimulationService : ObservableObject
             else parts.Add("no Foundry deployment found");
 
             IsAutoConfigured = result.Foundry is not null;
+            _autoConfigSucceeded = result.Identity is not null || result.Foundry is not null;
             SetStatus(string.Join(" · ", parts));
+            WriteAuditMarker("complete: " + string.Join("; ", parts));
 
             EventBus.Publish(new SimulationEvent
             {
@@ -113,7 +115,9 @@ public sealed partial class SimulationService : ObservableObject
         }
         catch (Exception ex)
         {
+            // Leave _autoConfigSucceeded false so a later trigger (e.g. Configuration page) retries.
             SetStatus($"Auto-detect failed: {ex.Message}");
+            WriteAuditMarker($"failed: {ex.Message}");
             EventBus.Publish(new SimulationEvent
             {
                 Source = "AutoConfig",
@@ -124,6 +128,24 @@ public sealed partial class SimulationService : ObservableObject
         finally
         {
             _autoConfigLock.Release();
+        }
+    }
+
+    /// <summary>
+    /// Appends a timestamped record of each auto-detection pass to a log file in the working
+    /// directory, giving a persistent audit trail of what was discovered and when.
+    /// </summary>
+    private void WriteAuditMarker(string message)
+    {
+        try
+        {
+            Directory.CreateDirectory(Config.WorkingDirectory);
+            var path = Path.Combine(Config.WorkingDirectory, "evilenduser-autoconfig.log");
+            File.AppendAllText(path, $"{DateTimeOffset.Now:o}  auto-detect {message}{Environment.NewLine}");
+        }
+        catch
+        {
+            // best effort — auditing must never break the run
         }
     }
 

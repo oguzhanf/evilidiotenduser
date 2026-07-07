@@ -45,6 +45,7 @@ playwright/.cache/
 # Runtime artefacts produced by the simulator (test drops / exported logs)
 evilenduser-log-*.json
 evilenduser-log-*.csv
+evilenduser-autoconfig.log
 EvilEndUser_Staging/
 
 # Local secrets / credentials (NEVER commit)
